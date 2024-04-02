@@ -9,7 +9,10 @@ use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
 /// This trait is almost a drop-in copy of the [`std::alloc::Allocator`]
 /// trait.
-pub trait CustomAllocator<Error>: Debug + Clone {
+pub trait CustomAllocator: Debug + Clone {
+    /// The error type returned by the allocator methods.
+    type Error;
+
     /// Attempts to allocate a block of memory.
     ///
     /// On success, returns a [`NonNull<[u8]>`][NonNull] meeting the size and alignment guarantees of `layout`.
@@ -30,7 +33,7 @@ pub trait CustomAllocator<Error>: Debug + Clone {
     /// call the [`handle_alloc_error`] function, rather than directly invoking `panic!` or similar.
     ///
     /// [`handle_alloc_error`]: std::alloc::handle_alloc_error
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, Error>;
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error>;
 
     /// Deallocates the memory referenced by `ptr`.
     ///
@@ -55,7 +58,7 @@ pub trait CustomAllocator<Error>: Debug + Clone {
     /// call the [`handle_alloc_error`] function, rather than directly invoking `panic!` or similar.
     ///
     /// [`handle_alloc_error`]: std::alloc::handle_alloc_error
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, Error> {
+    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error> {
         self.allocate(layout).map(|mut ptr| {
             unsafe {
                 ptr.as_mut().fill(0);
@@ -107,7 +110,7 @@ pub trait CustomAllocator<Error>: Debug + Clone {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, Error> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         debug_assert!(
             new_layout.size() >= old_layout.size(),
             "`new_layout.size()` must be greater than or equal to `old_layout.size()`"
@@ -174,7 +177,7 @@ pub trait CustomAllocator<Error>: Debug + Clone {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, Error> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         debug_assert!(
             new_layout.size() >= old_layout.size(),
             "`new_layout.size()` must be greater than or equal to `old_layout.size()`"
@@ -242,7 +245,7 @@ pub trait CustomAllocator<Error>: Debug + Clone {
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, Error> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         debug_assert!(
             new_layout.size() <= old_layout.size(),
             "`new_layout.size()` must be smaller than or equal to `old_layout.size()`"
@@ -285,11 +288,13 @@ impl<T> CustomAllocator<std::alloc::AllocError> for T
 where
     T: std::alloc::Allocator,
 {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+    type Error = std::alloc::AllocError;
+
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error> {
         (self as &std::alloc::Allocator).allocate(layout)
     }
 
-    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+    fn allocate_zeroed(&self, layout: Layout) -> Result<NonNull<[u8]>, Self::Error> {
         (self as &std::alloc::Allocator).allocate_zeroed(layout)
     }
 
@@ -309,7 +314,7 @@ where
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         (self as &std::alloc::Allocator).grow(ptr, old_layout, new_layout)
     }
 
@@ -318,7 +323,7 @@ where
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         (self as &std::alloc::Allocator).grow_zeroed(ptr, old_layout, new_layout)
     }
 
@@ -327,7 +332,7 @@ where
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<NonNull<[u8]>, AllocError> {
+    ) -> Result<NonNull<[u8]>, Self::Error> {
         (self as &std::alloc::Allocator).shrink(ptr, old_layout, new_layout)
     }
 }
