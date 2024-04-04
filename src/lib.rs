@@ -5,11 +5,11 @@
 //! defines the [`MemoryConsumption`] trait, which is used to report the
 //! memory consumption of an object.
 
-use std::{alloc::Layout, fmt::Debug, ptr::NonNull};
+use std::{alloc::Layout, ptr::NonNull};
 
 /// This trait is almost a drop-in copy of the [`std::alloc::Allocator`]
 /// trait.
-pub trait CustomAllocator: Debug + Clone {
+pub trait CustomAllocator {
     /// The error type returned by the allocator methods.
     type Error;
 
