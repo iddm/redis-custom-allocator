@@ -340,10 +340,9 @@ where
 /// A trait for types that can report their memory consumption.
 pub trait MemoryConsumption {
     /// Returns the memory consumption of the object in bytes. The
-    /// returned value should not include the allocation of the object
-    /// itself, but only the memory it uses for its content. For
-    /// example, a `Vec` should return the memory used by its elements,
-    /// but not the memory used by the `Vec` itself (pointers,
-    /// capacity, etc).
+    /// returned value should include the allocation of the object
+    /// itself, and the memory it uses for its content. For example, a
+    /// `Vec` should return the memory used by its elements, the pointer
+    /// to the heap-allocated memory, the capacity, etc.
     fn memory_consumption(&self) -> usize;
 }
