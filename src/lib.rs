@@ -5,7 +5,7 @@
 //! defines the [`MemoryConsumption`] trait, which is used to report the
 //! memory consumption of an object.
 
-use std::{alloc::Layout, ptr::NonNull};
+use std::{alloc::{Layout, GlobalAlloc}, ptr::NonNull};
 
 /// This trait is almost a drop-in copy of the [`std::alloc::Allocator`]
 /// trait.
@@ -280,6 +280,19 @@ pub trait CustomAllocator {
         Self: Sized,
     {
         self
+    }
+}
+
+impl CustomAllocator for std::alloc::System {
+    type Error = std::convert::Infallible;
+
+    fn allocate(&self, layout: std::alloc::Layout) -> Result<std::ptr::NonNull<[u8]>, Self::Error> {
+        let slice = unsafe { std::slice::from_raw_parts_mut(self.alloc(layout), layout.size()) };
+        Ok(std::ptr::NonNull::from(slice))
+    }
+
+    unsafe fn deallocate(&self, ptr: std::ptr::NonNull<u8>, layout: std::alloc::Layout) {
+        self.dealloc(ptr.as_ptr(), layout)
     }
 }
 
